@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Quản lý File</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <h1>Đăng nhập</h1>
+            <p class="subtitle">Quản lý File System</p>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Tên đăng nhập</label>
+                    <input type="text" id="username" name="username" required autocomplete="username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Mật khẩu</label>
+                    <input type="password" id="password" name="password" required autocomplete="current-password">
+                </div>
+                
+                <div id="errorMessage" class="error-message"></div>
+                
+                <button type="submit" class="btn btn-primary">Đăng nhập</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('errorMessage');
+            
+            // Gửi AJAX request
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', 'login.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        
+                        if (response.success) {
+                            // Đăng nhập thành công
+                            window.location.href = 'home.php';
+                        } else {
+                            // Đăng nhập thất bại
+                            errorMessage.textContent = response.message || 'Đăng nhập thất bại!';
+                            errorMessage.style.display = 'block';
+                        }
+                    } catch (e) {
+                        errorMessage.textContent = 'Lỗi xử lý phản hồi!';
+                        errorMessage.style.display = 'block';
+                    }
+                } else {
+                    errorMessage.textContent = 'Lỗi kết nối server!';
+                    errorMessage.style.display = 'block';
+                }
+            };
+            
+            xhr.onerror = function() {
+                errorMessage.textContent = 'Lỗi kết nối!';
+                errorMessage.style.display = 'block';
+            };
+            
+            xhr.send('username=' + encodeURIComponent(username) + '&password=' + encodeURIComponent(password));
+        });
+    </script>
+</body>
+</html>
