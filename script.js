@@ -1,10 +1,12 @@
 // Drag and drop functionality
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
+const folderInput = document.getElementById('folderInput');
 const fileList = document.getElementById('fileList');
 const uploadBtn = document.getElementById('uploadBtn');
 const uploadForm = document.getElementById('uploadForm');
 let selectedFiles = [];
+let filesWithPaths = [];
 
 // Prevent default drag behaviors
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -42,24 +44,56 @@ fileInput.addEventListener('change', (e) => {
     handleFiles(e.target.files);
 });
 
+// Handle folder input change
+folderInput.addEventListener('change', (e) => {
+    handleFiles(e.target.files, true);
+});
+
 // Handle files
-function handleFiles(files) {
+function handleFiles(files, isFolder = false) {
     selectedFiles = Array.from(files);
-    displayFileList();
+    filesWithPaths = [];
+
+    // Lưu thông tin file kèm path nếu upload folder
+    selectedFiles.forEach(file => {
+        filesWithPaths.push({
+            file: file,
+            relativePath: file.webkitRelativePath || file.name
+        });
+    });
+
+    displayFileList(isFolder);
     uploadBtn.style.display = selectedFiles.length > 0 ? 'block' : 'none';
 }
 
 // Display selected files
-function displayFileList() {
+function displayFileList(isFolder = false) {
     fileList.innerHTML = '';
 
-    selectedFiles.forEach((file, index) => {
+    if (isFolder && filesWithPaths.length > 0) {
+        // Hiển thị tổng quan khi upload folder
+        const folderName = filesWithPaths[0].relativePath.split('/')[0];
+        const summary = document.createElement('div');
+        summary.className = 'file-item';
+        summary.style.backgroundColor = '#e8f5e9';
+        summary.innerHTML = `
+            <div class="file-item-info">
+                <span class="file-item-name">📁 <strong>${folderName}</strong> (${selectedFiles.length} files)</span>
+                <span class="file-item-size">${formatFileSize(selectedFiles.reduce((acc, f) => acc + f.size, 0))}</span>
+            </div>
+            <button type="button" class="file-item-remove" onclick="clearAllFiles()">Xóa tất cả</button>
+        `;
+        fileList.appendChild(summary);
+    }
+
+    filesWithPaths.forEach((item, index) => {
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
+        const displayName = item.relativePath || item.file.name;
         fileItem.innerHTML = `
             <div class="file-item-info">
-                <span class="file-item-name">📄 ${file.name}</span>
-                <span class="file-item-size">${formatFileSize(file.size)}</span>
+                <span class="file-item-name">📄 ${displayName}</span>
+                <span class="file-item-size">${formatFileSize(item.file.size)}</span>
             </div>
             <button type="button" class="file-item-remove" onclick="removeFile(${index})">Xóa</button>
         `;
@@ -70,8 +104,19 @@ function displayFileList() {
 // Remove file from list
 function removeFile(index) {
     selectedFiles.splice(index, 1);
+    filesWithPaths.splice(index, 1);
     displayFileList();
     uploadBtn.style.display = selectedFiles.length > 0 ? 'block' : 'none';
+}
+
+// Clear all files
+function clearAllFiles() {
+    selectedFiles = [];
+    filesWithPaths = [];
+    fileList.innerHTML = '';
+    uploadBtn.style.display = 'none';
+    fileInput.value = '';
+    folderInput.value = '';
 }
 
 // Format file size
@@ -97,16 +142,11 @@ uploadForm.addEventListener('submit', async (e) => {
     }
 
     const formData = new FormData();
-    // Reset file input trước
-    const dataTransfer = new DataTransfer();
-    selectedFiles.forEach(file => {
-        dataTransfer.items.add(file);
-    });
-    fileInput.files = dataTransfer.files;
-    
-    // Append files theo đúng format PHP mong đợi
-    selectedFiles.forEach((file, index) => {
-        formData.append('files[]', file, file.name);
+
+    // Append files theo đúng format PHP mong đợi, kèm relative path
+    filesWithPaths.forEach((item, index) => {
+        formData.append('files[]', item.file, item.file.name);
+        formData.append('paths[]', item.relativePath);
     });
 
     // Disable button and show loading
@@ -117,8 +157,11 @@ uploadForm.addEventListener('submit', async (e) => {
     uploadProgress.style.display = 'inline-block';
     uploadProgress.innerHTML = '<span class="loading"></span> Đang upload...';
 
+    // Thêm action vào formData
+    formData.append('action', 'upload');
+
     try {
-        const response = await fetch('upload.php', {
+        const response = await fetch('action.php', {
             method: 'POST',
             body: formData
         });
@@ -162,16 +205,17 @@ function showMessage(text, type) {
 
 // Download file
 function downloadFile(hash) {
-    window.location.href = 'download.php?hash=' + hash;
+    window.location.href = 'action.php?action=download&hash=' + hash;
 }
 
 // Get download link
 async function getLink(hash) {
     try {
         const formData = new FormData();
+        formData.append('action', 'getlink');
         formData.append('hash', hash);
 
-        const response = await fetch('getlink.php', {
+        const response = await fetch('action.php', {
             method: 'POST',
             body: formData
         });
@@ -194,6 +238,36 @@ async function getLink(hash) {
     }
 }
 
+// Get Path
+async function getPath(hash) {
+    try {
+        const formData = new FormData();
+        formData.append('action', 'getpath');
+        formData.append('hash', hash);
+
+        const response = await fetch('action.php', {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Copy link to clipboard
+            navigator.clipboard.writeText(result.path).then(() => {
+                showMessage('Path đã được copy: ' + result.path, 'success');
+            }).catch(() => {
+                // Fallback: show link in alert
+                prompt('Path download:', result.path);
+            });
+        } else {
+            showMessage(result.message, 'error');
+        }
+    } catch (error) {
+        showMessage('Lỗi kết nối server!', 'error');
+    }
+}
+
 // Delete file
 async function deleteFile(hash) {
     if (!confirm('Bạn có chắc muốn xóa file này?')) {
@@ -202,9 +276,10 @@ async function deleteFile(hash) {
 
     try {
         const formData = new FormData();
+        formData.append('action', 'delete');
         formData.append('hash', hash);
 
-        const response = await fetch('delete.php', {
+        const response = await fetch('action.php', {
             method: 'POST',
             body: formData
         });

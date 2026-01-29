@@ -8,11 +8,6 @@ header('Content-Type: application/json');
 echo json_encode([
     'FILES' => $_FILES,
     'POST' => $_POST,
-    'SERVER' => [
-        'CONTENT_TYPE' => $_SERVER['CONTENT_TYPE'] ?? 'not set',
-        'CONTENT_LENGTH' => $_SERVER['CONTENT_LENGTH'] ?? 'not set',
-        'REQUEST_METHOD' => $_SERVER['REQUEST_METHOD'] ?? 'not set',
-    ],
     'ini' => [
         'file_uploads' => ini_get('file_uploads'),
         'upload_max_filesize' => ini_get('upload_max_filesize'),

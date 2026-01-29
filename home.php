@@ -36,9 +36,11 @@ $result = $conn->query($query);
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">📎</div>
                     <p class="upload-text">Kéo thả file vào đây hoặc click để chọn file</p>
-                    <p class="upload-hint">Hỗ trợ upload nhiều file cùng lúc</p>
+                    <p class="upload-hint">Hỗ trợ upload nhiều file cùng lúc hoặc cả folder</p>
                     <input type="file" id="fileInput" name="files[]" multiple style="display: none;">
-                    <button type="button" class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Chọn File</button>
+                    <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;">
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('fileInput').click()">📄 Chọn Files</button>
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('folderInput').click()" style="margin-left: 10px;">📁 Chọn Folder</button>
                 </div>
 
                 <div id="fileList" class="file-list"></div>
@@ -86,6 +88,7 @@ $result = $conn->query($query);
                                     <td class='action-buttons'>
                                         <button onclick='downloadFile(\"{$row['hash']}\")' class='btn btn-sm btn-info' title='Download'>⬇️</button>
                                         <button onclick='getLink(\"{$row['hash']}\")' class='btn btn-sm btn-warning' title='Get Link'>🔗</button>
+                                        <button onclick='getPath(\"{$row['hash']}\")' class='btn btn-sm btn-primary' title='Get Path'>🔗</button>
                                         <button onclick='deleteFile(\"{$row['hash']}\")' class='btn btn-sm btn-danger' title='Delete'>🗑️</button>
                                     </td>
                                 </tr>";
