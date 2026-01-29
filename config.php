@@ -1,9 +1,9 @@
 <?php
 // Cấu hình database
 define('DB_HOST', 'localhost');
-define('DB_USER', 'sql_files_smm79_');
-define('DB_PASS', 'sql_files_smm79_com');
-define('DB_NAME', 'sql_files_smm79_');
+define('DB_USER', '');
+define('DB_PASS', '');
+define('DB_NAME', '');
 
 // Cấu hình đăng nhập (không dùng SQL)
 define('LOGIN_USERNAME', 'khuongsosad');
@@ -44,3 +44,4 @@ function requireLogin()
         exit();
     }
 }
+
